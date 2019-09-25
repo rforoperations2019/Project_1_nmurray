@@ -23,7 +23,8 @@ sidebar <- dashboardSidebar(
     
     # Menu Items ----------------------------------------------
     menuItem("Plot", icon = icon("bar-chart"), tabName = "plot"),
-    menuItem("Table", icon = icon("table"), tabName = "table", badgeLabel = "new", badgeColor = "green"),
+    menuItem("Table", icon = icon("table"), tabName = "table"),
+    menuItem("Third Thing?", icon = NULL, tabName = "Third tab"),
   
     #Select Imputs---------------------------------------------
   selectInput(inputId = "county",
@@ -64,8 +65,8 @@ server <- function(input, output) {
     })
   
   # Data table ----------------------------------------------
-  output$table <- DT::renderDataTable({crimes, county_subset()
-  })
+  output$table <- renderDataTable({crimes
+    })
    
    output$distPlot <- renderPlot({
       # generate bins based on input$bins from ui.R
