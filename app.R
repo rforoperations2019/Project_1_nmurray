@@ -9,9 +9,10 @@
 
 library(shiny)
 library(shinydashboard)
+library(DT)
 
 # Load Data---------
-# crimes <- data.frame(read.csv("Index__Violent__Property__and_Firearm_Rates_By_County__Beginning_1990.csv"))
+crimes <- data.frame(read.csv("Index__Violent__Property__and_Firearm_Rates_By_County__Beginning_1990.csv"))
 
 #------------------------------------
 
@@ -24,7 +25,7 @@ sidebar <- dashboardSidebar(
     # Menu Items ----------------------------------------------
     menuItem("Plot", icon = icon("bar-chart"), tabName = "plot"),
     menuItem("Table", icon = icon("table"), tabName = "table"),
-    menuItem("Third Thing?", icon = NULL, tabName = "Third tab"),
+    menuItem("Third Thing?", icon("plot"), tabName = "Third tab"),
   
     #Select Imputs---------------------------------------------
   selectInput(inputId = "county",
@@ -38,13 +39,20 @@ sidebar <- dashboardSidebar(
                           "OSWEGO", "OTSEGO", "PUTNAM", "QUEENS", "RENSSELAER", "RICHMOND",
                           "ROCKLAND", "SARATOGA", "SCHENECTADY", "SCHOHARIE", "SCHUYLER", "SENECA",
                           "ST LAWRENCE", "STEUBEN", "SUFFOLK", "SULLIVAN","TIOGA","TOMPKINS",
-                          "ULSTER", "WARREN", "WASHINGTON", "WAYNE", "WESTCHESTER", "WYOMING"))
+                          "ULSTER", "WARREN", "WASHINGTON", "WAYNE", "WESTCHESTER", "WYOMING")),
+  
+  # Select Date Range for Filter by year---------------------------
+
+  sliderInput(inputId = "year_range", label = "Year Range:", 
+              min = 1990, max = 2019, value = 1990, ticks = TRUE, sep = "", 
+              animate = animationOptions(interval = 500)) # Animates over time--Not sure I want this? 
+  
   )
 )
 
 body <- dashboardBody(tabItems(
   tabItem("table",
-          fluidPage(box(title = "placeholder--county", DT::dataTableOutput("table"), width = 16))
+          fluidPage(box(title = "County", DT::dataTableOutput("table"), width = 16))
           )
   )
 )
@@ -61,12 +69,23 @@ server <- function(input, output) {
   #Create a subset to filter for County------------------------------------
   county_subset <- reactive({
     req(input$county)
-    filter(crimes, County %in% input$county)
+    filter(crimes, crimes$County %in% input$county)
     })
   
+  #Create a subset to filter by Year------------------------------------
+  year_subset <- reactive({
+    req(input$year)
+    filter(crimes, crimes$Year %in% input$year)
+  })
+  
   # Data table ----------------------------------------------
-  output$table <- renderDataTable({crimes
-    })
+  # output$table <- renderDataTable({
+  #   DT::datatable(crimes,options = list(orderClasses = TRUE))
+  #   })
+  
+  output$table <- renderDataTable({
+    crimes
+  })
    
    output$distPlot <- renderPlot({
       # generate bins based on input$bins from ui.R
