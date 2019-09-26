@@ -1,19 +1,13 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
 library(shiny)
 library(shinydashboard)
 library(DT)
+library(ggplot2)
+library(plotly)
+library(tools)
+library(stringr)
 
 # Load Data---------
-crimes <- data.frame(read.csv("Index__Violent__Property__and_Firearm_Rates_By_County__Beginning_1990.csv"))
-
+crimes <- read.csv("Index__Violent__Property__and_Firearm_Rates_By_County__Beginning_1990.csv")
 #------------------------------------
 
 header <- dashboardHeader(title = "NYS Crime Data")
@@ -30,7 +24,7 @@ sidebar <- dashboardSidebar(
     #Select Imputs---------------------------------------------
   selectInput(inputId = "county",
               label = "Select County",
-              choices = c("ALBANY","ALLEGANY","BRONX","BROOME","CATTARAUGUS", "CAYUGA",
+              choices = str_to_title(c("ALBANY","ALLEGANY","BRONX","BROOME","CATTARAUGUS", "CAYUGA",
                           "CHAUTAUQUA", "CHEMUNG", "CHENANGO", "CLINTON", "COLUMBIA","CORTLAND",
                           "DELAWARE", "DUTCHESS", "ERIE", "ESSEX", "FRANKLIN", "FULTON",
                           "GENESEE", "GREENE", "HERKIMER", "JEFFERSON", "KINGS",  "LEWIS",
@@ -39,62 +33,66 @@ sidebar <- dashboardSidebar(
                           "OSWEGO", "OTSEGO", "PUTNAM", "QUEENS", "RENSSELAER", "RICHMOND",
                           "ROCKLAND", "SARATOGA", "SCHENECTADY", "SCHOHARIE", "SCHUYLER", "SENECA",
                           "ST LAWRENCE", "STEUBEN", "SUFFOLK", "SULLIVAN","TIOGA","TOMPKINS",
-                          "ULSTER", "WARREN", "WASHINGTON", "WAYNE", "WESTCHESTER", "WYOMING")),
+                          "ULSTER", "WARREN", "WASHINGTON", "WAYNE", "WESTCHESTER", "WYOMING"))),
   
-  # Select Date Range for Filter by year---------------------------
+  # Select Date Range for Filter by year (Over a Interval)---------------------------
 
   sliderInput(inputId = "year_range", label = "Year Range:", 
-              min = 1990, max = 2019, value = 1990, ticks = TRUE, sep = "", 
+              min = 1990, max = 2018, value = c(1990, 2018), ticks = TRUE, sep = "", 
               animate = animationOptions(interval = 500)) # Animates over time--Not sure I want this? 
   
   )
 )
 
-body <- dashboardBody(tabItems(
-  tabItem("table",
-          fluidPage(box(title = "County", DT::dataTableOutput("table"), width = 16))
-          )
+body <- dashboardBody(
+  # Data Table Page 
+          fluidPage(
+            box(DT::dataTableOutput(outputId = "table"))
+          ),
+  
+  # Plot Page
+
+  tabItems(
+    #Firearms Crimes Plot------------------------------------------------------
+    tabItem(
+      fluidPage(
+        box(title = "Plot--Not sure", width = 12,
+            plotOutput(outputId = "plot_firearmrt"))
+
+      )
+    )
   )
 )
-
+  
 dashboardPage(header, sidebar, body)
 
 # Define UI for application that draws a histogram
 
 ui <- dashboardPage(header, sidebar, body)
-# Define server logic required to draw a histogram
+
+############## SERVER ###########################
 server <- function(input, output) {
   
-  
-  #Create a subset to filter for County------------------------------------
-  county_subset <- reactive({
-    req(input$county)
-    filter(crimes, crimes$County %in% input$county)
-    })
-  
-  #Create a subset to filter by Year------------------------------------
-  year_subset <- reactive({
-    req(input$year)
-    filter(crimes, crimes$Year %in% input$year)
+  #Create a subset to filter by Year And County------------------------------------
+  year_CountySubset <- reactive({
+      req(input$year, input$county)
+      subset(crimes$Year >= input$year[1] &
+             crimes$Year <= input$year[2] &
+            crimes$County == input$county)
   })
-  
-  # Data table ----------------------------------------------
-  # output$table <- renderDataTable({
-  #   DT::datatable(crimes,options = list(orderClasses = TRUE))
-  #   })
-  
-  output$table <- renderDataTable({
-    crimes
-  })
-   
-   output$distPlot <- renderPlot({
-      # generate bins based on input$bins from ui.R
-      x    <- faithful[, 2] 
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-      
-      # draw the histogram with the specified number of bins
-      hist(x, breaks = bins, col = 'darkgray', border = 'white')
+
+ # Data table ----------------------------------------------
+ output$table <- renderDataTable({
+     DT::datatable(year_CountySubset(),options = list(orderClasses = TRUE))
    })
+ 
+ # Density Plot of Year ----------------------------
+ output$plot_firearmrt <- renderPlot({
+   ggplot(year_CountySubset(), aes(x =Year, fill = Firearm.Rate)) +
+     geom_density() + labs(title="Firearms Crimes Rate by County", x="Year")
+ }
+ )
+  
 }
 
 # Run the application 
