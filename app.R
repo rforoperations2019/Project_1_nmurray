@@ -24,7 +24,7 @@ sidebar <- dashboardSidebar(
     menuItem("Plot", icon = icon("bar-chart"), tabName = "plot"),
     menuItem("Table", icon = icon("table"), tabName = "table"),
     menuItem("Dashboard", icon = icon("user-astronaut"), tabName = "Third tab"),
-    
+    menuItem("Crimes Rates Drilldown", icon = icon("cog"), tabName = "crimerates"),
     
     # Inputs: county -----------------------------------------------------------------
     pickerInput("countySelect",
@@ -83,21 +83,30 @@ body <- dashboardBody(tabItems(
   # Plot Page ------------------------------------------
   tabItem("plot",
           fluidPage(
-            box(title = "Selected Crime Rate in Selected NYS Counties", width = 10,
+            box(title = "Crime Rate in Selected NYS Counties over Time", width = 10,
                 plotlyOutput(outputId = "plot_firearmrt"))
           ),
           fluidPage(
-            box(title = "Selected Crime Count By Population", width = 10,
+            box(title = "Crime Count in Selected NYS Counties By Year ", width = 10,
                 plotlyOutput(outputId = "scatter_crimepop"))
-          ),
-          fluidPage(
-            box(title = "County Crime Rate Compared to State Average", width = 10,
-                plotlyOutput(outputId = "deviation"))
+          )
+  ),
+  
+  # Crime Rate DrillDown Page ----------------------------------------------
+  tabItem("crimerates",
+          fluidRow(
+            tabBox(title = "Crime Rates",
+                   width = 12,
+                   tabPanel("Index Rate", plotlyOutput(outputId = "plot1")),
+                   tabPanel("Violent Rate", plotlyOutput(outputId = "plot2")),
+                   tabPanel("Property Rate", plotlyOutput(outputId = "plot3")),
+                   tabPanel("Property Rate", plotlyOutput(outputId = "plot4"))
+            )
           )
   ),
   
   # Dashboard---------------------
-  tabItem("Dashboard", 
+  tabItem("Third tab", 
           fluidPage(infoBox(title = "This is a title", value = NULL, subtitle = NULL,
                             icon = shiny::icon("bar-chart"), color = "aqua", width = 4,
                             href = NULL, fill = FALSE))
@@ -120,7 +129,7 @@ server <- function(input, output) {
     data_subset
     
   })
-
+  
   # #Create a subset to filter by SINGLE Year And County and Population------------------------------------
   year_CountySubset <- reactive({
     req(input$yearSelect, input$countySelect, input$pop_range)
@@ -161,36 +170,65 @@ server <- function(input, output) {
     
   })
   
-  # Diverging Bar Chart------------------------ County Crime Rate Compared to State Average
+  # Crime Rate Drill Down-- Plot 1: Index Rate---------------------------
   
-  output$deviation <- renderPlotly({
-    
-    # z_score <- round((input$crime_type - mean(input$crime_type))/sd(input$crime_type), 2)
-    # crimes$above_below <- ifelse(crimes$z_score < 0, "below", "above")
- 
-    
-    state_avg <- mean(input$crime_type)
-     
-    # Diverging Barcharts
-   q <- ggplot(year_CountySubset(), aes_string(x="County", y=input$crime_type, label=input$crime_type, fill = "County")) +
+  output$plot1 <- renderPlotly({
+    p1 <- ggplot(year_CountySubset(), aes_string(x = "County", y = "Index.Rate", fill = "County")) +
       geom_bar(stat='identity', width=.5) +
-     # scale_colour_manual(name = 'Above State Average', values = setNames(c('red','green'))) +
       labs(subtitle="Rename'",
-           title= paste(input$crime_type, "in Selected Counties Compared to State Average")) +
+           title= paste("Index Crime Rate in Selected Counties")) +
       coord_flip() +
-     facet_wrap("Year") +
-     geom_vline(xintercept = state_avg)
-   
-  
+      facet_wrap("Year") +
+      geom_vline(xintercept = as.numeric(mean(year_CountySubset()$Index.Rate)))
     
-  ggplotly(q)
-  
+    ggplotly(p1)
   })
   
+  # Crime Rate Drill Down-- Plot 2: Index Rate---------------------------
   
+  output$plot2 <- renderPlotly({
+    p2 <- ggplot(year_CountySubset(), aes_string(x = "County", y = "Violent.Rate", fill = "County")) +
+      geom_bar(stat='identity', width=.5) +
+      labs(subtitle="Rename'",
+           title= paste("Violent Crime Rate in Selected Counties")) +
+      coord_flip() +
+      facet_wrap("Year") +
+      geom_vline(xintercept = as.numeric(mean(year_CountySubset()$Violent.Rate)))
+    
+    ggplotly(p2)
+    
+  })
   
+  #   # Crime Rate Drill Down-- Plot 3: Property Rate---------------------------
+  
+  output$plot3 <- renderPlotly({
+    p3 <- ggplot(year_CountySubset(), aes_string(x = "County", y = "Property.Rate", fill = "County")) +
+        geom_bar(stat='identity', width=.5) +
+        labs(subtitle="Rename'",
+             title= paste("Property Crime Rate in Selected Counties")) +
+        coord_flip() +
+        facet_wrap("Year") +
+        geom_vline(xintercept = as.numeric(mean(year_CountySubset()$Property.Rate)))
+    
+    ggplotly(p3)
+  })
+  
+  # Crime Rate Drill Down-- Plot 4: Firearms Rate-------------------------
+  output$plot4 <- renderPlotly({
+    p4<- ggplot(year_CountySubset(), aes_string(x = "County", y = "Firearm.Rate", fill = "County")) +
+      geom_bar(stat='identity', width=.5) +
+      labs(subtitle="Rename'",
+           title= paste("Firearm Crime Rate in Selected Counties")) +
+      coord_flip() +
+      facet_wrap("Year") +
+      geom_vline(xintercept = as.numeric(mean(year_CountySubset()$Firearm.Rate)))
+    
+    ggplotly(p4)
+    
+  })
   
 }
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+
