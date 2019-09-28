@@ -49,6 +49,7 @@ sidebar <- dashboardSidebar(
     sliderInput(inputId = "pop_range", label = "Select Counties with Population Size of:", 
                 min = 0, max = max(crimes$Population), value = c(min(crimes$Population),max(crimes$Population)), ticks = TRUE), 
     
+    h6("Change Upper Plot:"), 
     
     # Select Crime Type (RATE) ------------------------------------------------------------------
     radioButtons(inputId = "crime_type", 
@@ -58,6 +59,8 @@ sidebar <- dashboardSidebar(
                              "Index Crimes" = "Index.Rate",
                              "Property Crimes" = "Property.Rate"),
                  selected = "Firearm.Rate"), 
+    
+    h6("Change Lower Plot:"), 
     
     # Select Crime Type (Count) ------------------------------------------------------------------
     radioButtons(inputId = "crime_count", 
